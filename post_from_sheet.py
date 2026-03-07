@@ -243,8 +243,8 @@ def main():
                 post_url = x_result.get("url", "")
             
             # Update sheet: status → posted, add URL
-            status_col = 8   # Column H = Status
-            url_col = 10      # Column J = Post URL
+            status_col = 9   # Column I = Status
+            url_col = 11      # Column K = Post URL
             worksheet.update_cell(row_num, status_col, "posted")
             if post_url:
                 worksheet.update_cell(row_num, url_col, post_url)
@@ -255,8 +255,8 @@ def main():
         except Exception as e:
             print(f"❌ Error: {e}")
             # Update sheet with failure
-            worksheet.update_cell(row_num, 8, "failed")
-            worksheet.update_cell(row_num, 9, str(e)[:200])
+            worksheet.update_cell(row_num, 9, "failed")
+            worksheet.update_cell(row_num, 10, str(e)[:200])
             failed += 1
         
         time.sleep(2)

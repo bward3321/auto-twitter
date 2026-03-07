@@ -30,6 +30,10 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 GOOGLE_SHEETS_CREDS = os.environ.get("GOOGLE_SHEETS_CREDS")  # JSON string of service account
 SHEET_ID = os.environ.get("GOOGLE_SHEET_ID")  # Google Sheet ID from the URL
 
+LEONARDO_API_KEY = os.environ.get("LEONARDO_API_KEY", "")
+LEONARDO_API_BASE = "https://cloud.leonardo.ai/api/rest/v1"
+LEONARDO_MODEL_ID = "6b645e3a-d64f-4341-a6d8-7a3f79d62571"  # Phoenix 1.0
+
 ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
 TZ = ZoneInfo("America/New_York")
 
@@ -38,6 +42,61 @@ IMAGE_RATIO = 0.25
 DAYS_AHEAD = 7
 POST_WINDOW_START = 10  # 10 AM ET
 POST_WINDOW_END = 16    # 4 PM ET
+
+
+def generate_image_preview(prompt):
+    """Generate image via Leonardo.ai during sheet generation, return URL for preview"""
+    if not LEONARDO_API_KEY:
+        return ""
+    
+    import time
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {LEONARDO_API_KEY}",
+    }
+    
+    try:
+        resp = requests.post(
+            f"{LEONARDO_API_BASE}/generations",
+            headers=headers,
+            json={
+                "height": 1024, "width": 1024,
+                "modelId": LEONARDO_MODEL_ID,
+                "prompt": prompt,
+                "num_images": 1,
+                "alchemy": True,
+                "presetStyle": "DYNAMIC",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        generation_id = resp.json()["sdGenerationJob"]["generationId"]
+        
+        for attempt in range(12):
+            time.sleep(5)
+            status_resp = requests.get(
+                f"{LEONARDO_API_BASE}/generations/{generation_id}",
+                headers=headers, timeout=15,
+            )
+            status_resp.raise_for_status()
+            gen_data = status_resp.json()["generations_by_pk"]
+            
+            if gen_data.get("status") == "COMPLETE":
+                images = gen_data.get("generated_images", [])
+                if images:
+                    url = images[0]["url"]
+                    print(f"    🎨 Image ready: {url[:60]}...")
+                    return url
+                break
+            elif gen_data.get("status") == "FAILED":
+                break
+        
+        print(f"    ⚠️  Image generation failed/timed out")
+        return ""
+    except Exception as e:
+        print(f"    ⚠️  Image error: {e}")
+        return ""
 
 
 def load_topics():
@@ -204,7 +263,7 @@ def write_to_sheet(gc, all_rows):
     except Exception:
         existing = []
     
-    headers = ["Day", "Date", "Time", "Content", "Type", "Image Prompt", "Category", "Status", "Notes", "Post URL"]
+    headers = ["Day", "Date", "Time", "Content", "Type", "Image Prompt", "Image Preview", "Category", "Status", "Notes", "Post URL"]
     
     if not existing:
         worksheet.append_row(headers, value_input_option="RAW")
@@ -228,6 +287,7 @@ def write_to_sheet(gc, all_rows):
             row["content"],
             row["type"],
             row.get("image_prompt", ""),
+            row.get("image_preview", ""),
             row.get("category", ""),
             "pending",  # Status
             "",         # Notes
@@ -248,6 +308,10 @@ def write_to_sheet(gc, all_rows):
                 {"updateDimensionProperties": {
                     "range": {"sheetId": worksheet.id, "dimension": "COLUMNS", "startIndex": 5, "endIndex": 6},
                     "properties": {"pixelSize": 300}, "fields": "pixelSize"
+                }},
+                {"updateDimensionProperties": {
+                    "range": {"sheetId": worksheet.id, "dimension": "COLUMNS", "startIndex": 6, "endIndex": 7},
+                    "properties": {"pixelSize": 350}, "fields": "pixelSize"
                 }},
             ]
         }
@@ -306,6 +370,11 @@ def main():
             times = calculate_times(date, len(posts))
             
             for post, post_time in zip(posts, times):
+                image_preview = ""
+                if post["type"] == "image" and post.get("image_prompt") and LEONARDO_API_KEY:
+                    print(f"  🎨 Generating image preview...")
+                    image_preview = generate_image_preview(post["image_prompt"])
+                
                 row = {
                     "day": day_name,
                     "date": date.strftime("%Y-%m-%d"),
@@ -313,6 +382,7 @@ def main():
                     "content": post["content"],
                     "type": post["type"],
                     "image_prompt": post.get("image_prompt", ""),
+                    "image_preview": image_preview,
                     "category": post.get("topic_category", ""),
                 }
                 all_rows.append(row)
