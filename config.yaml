@@ -1,0 +1,22 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# POSTING CONFIG - @brendanwardai
+# Controls how many posts per day, timing, and image ratio.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Number of posts to generate and schedule per day
+posts_per_day: 4
+
+# What percentage of posts should include AI-generated images
+# 0.25 = 1 out of 4 posts gets an image
+image_post_ratio: 0.25
+
+# Posting window (times are in the timezone below)
+# Posts will be evenly spread across this window with some randomness
+posting_window_start_hour: 10   # 10:00 AM
+posting_window_end_hour: 16     # 4:00 PM
+
+# Timezone for scheduling
+timezone: "America/New_York"
+
+# Platform to post to
+platform: "x"

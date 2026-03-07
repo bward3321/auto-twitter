@@ -1,0 +1,147 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# TOPICS CONFIG - @brendanwardai
+# Edit this file to control what your account posts about.
+# The AI will pull from these categories and subtopics to generate daily posts.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Voice & style guidelines for ALL posts
+voice:
+  tone: "casual, direct, no-BS, founder-who-has-been-through-it energy"
+  style_notes: |
+    Write like someone who has built and sold companies, runs a real business, 
+    and is deep in AI/automation. Not a guru. Not a motivational speaker. 
+    Someone who has done the thing and shares real observations.
+    Mix contrarian takes with practical insights. 
+    Occasionally funny/self-deprecating.
+    Write in lowercase when it feels natural (like real tweets).
+    Short sentences hit harder.
+  avoid: |
+    - Hashtag spam (1 max, only if natural)
+    - Corporate buzzwords (leverage, synergy, ecosystem)
+    - Generic advice ("just start" "be consistent" "add value")
+    - Motivational poster energy
+    - Starting with "Just"
+    - Emoji spam (0-1 per tweet, often zero)
+    - "Thread 🧵" format
+    - Tagging random people
+    - "Who else thinks..."
+    - "Unpopular opinion:" (overused)
+  format_preferences: |
+    - Mostly short punchy tweets (1-3 sentences)
+    - Occasional longer observations (but still under 280 chars)
+    - Sometimes a question that sparks debate
+    - Hot takes that make people stop scrolling
+    - Real numbers and specifics over vague claims
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TOPIC CATEGORIES
+# Add as many as you want. The AI picks from different categories each day.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+categories:
+
+  - name: "AI & Automation in Business"
+    description: "How AI is actually being used in real businesses right now, not hype"
+    subtopics:
+      - AI agents replacing entire workflows
+      - Claude, GPT, and other models in production
+      - AI in sales and outbound
+      - Cold email + AI combinations
+      - AI-generated content quality vs human
+      - Automation tools (n8n, Make, Zapier)
+      - AI coding assistants in real workflows
+      - Building products with AI (not just using it)
+    angles:
+      - What actually works vs what's hype
+      - Real ROI numbers from AI implementations
+      - What jobs are actually being automated
+      - The gap between AI demos and production
+      - Why most businesses are using AI wrong
+
+  - name: "Startups & Entrepreneurship"  
+    description: "Real founder experiences, startup failures, building companies"
+    subtopics:
+      - Why most startups fail (specific reasons)
+      - Solo founder vs co-founder dynamics
+      - Revenue-first vs fundraising-first
+      - Side projects and micro-SaaS
+      - Startup ideas that actually work
+      - The unsexy parts of building a company
+      - Pricing strategy and positioning
+      - When to pivot vs when to persist
+    angles:
+      - Contrarian takes on startup culture
+      - Lessons from actual failures
+      - What VCs don't tell you
+      - The difference between building and performing
+      - Why bootstrapping beats fundraising for most
+
+  - name: "Cold Email & Outbound Sales"
+    description: "The craft of outbound, lead gen, deliverability, what actually converts"
+    subtopics:
+      - Email deliverability and inbox placement
+      - Subject line psychology
+      - Cold email copy that converts
+      - Lead list quality vs quantity
+      - Multi-channel outbound (email + LinkedIn + cold call)
+      - Email infrastructure and domain warming
+      - Personalization at scale
+      - Follow-up sequences that work
+    angles:
+      - What's working RIGHT NOW in cold email
+      - Common mistakes that kill deliverability
+      - The math behind outbound campaigns
+      - Why most cold emails get ignored
+      - Real response rate benchmarks
+
+  - name: "Building in Public / Maker Culture"
+    description: "The process of building digital products, shipping fast, learning from users"
+    subtopics:
+      - Shipping MVPs fast
+      - Choosing what to build next
+      - Growth without paid ads
+      - SEO and organic acquisition
+      - Monetization strategies for side projects
+      - The indie maker lifestyle
+      - Tools and tech stacks for solo builders
+    angles:
+      - Speed of execution as competitive advantage
+      - Why most makers build the wrong thing
+      - The gap between idea and execution
+      - Real revenue numbers from projects
+      - How to validate before you build
+
+  - name: "Tech Industry & Culture"
+    description: "Observations about the tech world, trends, culture, work"
+    subtopics:
+      - Remote work reality
+      - Tech layoffs and hiring
+      - Developer tools and productivity
+      - Social media platform changes
+      - Tech company strategies and decisions
+      - The creator economy
+      - Web3/crypto reality check
+    angles:
+      - Calling BS on tech trends
+      - What's actually changing vs what's noise
+      - The human side of tech
+      - Predictions and hot takes
+      - Why [big company] just did [thing]
+
+  - name: "Growth & Marketing"
+    description: "What actually drives growth for businesses and products"
+    subtopics:
+      - Distribution beats product
+      - Content marketing reality
+      - Newsletter growth tactics
+      - SEO in 2025-2026
+      - LinkedIn as a growth channel
+      - Twitter/X growth strategies
+      - Paid vs organic acquisition
+      - Referral and word-of-mouth
+    angles:
+      - What actually moves the needle
+      - Vanity metrics vs real metrics
+      - The unsexy growth tactics that work
+      - Why most marketing advice is wrong
+      - Real CAC and LTV numbers

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+*.jpg
+*.png
+post_image_*
+.DS_Store
+google-creds.json

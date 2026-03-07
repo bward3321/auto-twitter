@@ -1,0 +1,59 @@
+name: Twitter Autoposter
+
+on:
+  schedule:
+    # Weekly: Generate next week's posts every Sunday at 10am ET (15:00 UTC)
+    - cron: '0 15 * * 0'
+    # Daily: Post today's approved content at 8am ET (13:00 UTC)
+    - cron: '0 13 * * *'
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Command to run'
+        required: true
+        default: 'post'
+        type: choice
+        options:
+          - generate
+          - post
+
+jobs:
+  generate:
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '0 15 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.command == 'generate')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Generate weekly posts to Sheet
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: python generate_to_sheet.py
+
+  post:
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '0 13 * * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.command == 'post')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Post approved content
+        env:
+          UPLOAD_POST_API_KEY: ${{ secrets.UPLOAD_POST_API_KEY }}
+          UPLOAD_POST_USER: ${{ secrets.UPLOAD_POST_USER }}
+          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: python post_from_sheet.py
