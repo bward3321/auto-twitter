@@ -45,7 +45,7 @@ POST_WINDOW_END = 16    # 4 PM ET
 
 
 def generate_image_preview(prompt):
-    """Generate image via Leonardo.ai during sheet generation, return URL for preview"""
+    """Generate image via Leonardo.ai Seedream 4.5 (V2 API), return URL for preview"""
     if not LEONARDO_API_KEY:
         return ""
     
@@ -57,26 +57,30 @@ def generate_image_preview(prompt):
     }
     
     try:
+        # Seedream 4.5 uses V2 endpoint
         resp = requests.post(
-            f"{LEONARDO_API_BASE}/generations",
+            "https://cloud.leonardo.ai/api/rest/v2/generations",
             headers=headers,
             json={
-                "height": 1024, "width": 1024,
-                "modelId": LEONARDO_MODEL_ID,
-                "prompt": prompt,
-                "num_images": 1,
-                "alchemy": True,
-                "presetStyle": "DYNAMIC",
+                "model": "seedream-4.5",
+                "parameters": {
+                    "width": 1024,
+                    "height": 1024,
+                    "prompt": prompt,
+                    "quantity": 1,
+                },
+                "public": False,
             },
             timeout=30,
         )
         resp.raise_for_status()
-        generation_id = resp.json()["sdGenerationJob"]["generationId"]
+        generation_id = resp.json()["generate"]["generationId"]
         
-        for attempt in range(12):
+        # Poll V1 status endpoint for completion
+        for attempt in range(15):
             time.sleep(5)
             status_resp = requests.get(
-                f"{LEONARDO_API_BASE}/generations/{generation_id}",
+                f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}",
                 headers=headers, timeout=15,
             )
             status_resp.raise_for_status()
