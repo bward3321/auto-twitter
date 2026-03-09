@@ -133,8 +133,12 @@ def get_sheet_client():
 def get_existing_posts(worksheet):
     """Get all existing content from the sheet to avoid repeats"""
     try:
-        records = worksheet.get_all_records()
-        return [r.get("Content", "") for r in records if r.get("Content")]
+        all_values = worksheet.get_all_values()
+        if len(all_values) < 2:
+            return []
+        headers = all_values[0]
+        content_idx = headers.index("Content") if "Content" in headers else 3
+        return [row[content_idx] for row in all_values[1:] if len(row) > content_idx and row[content_idx]]
     except Exception:
         return []
 

@@ -185,17 +185,24 @@ def main():
         print("ERROR: 'Posts' worksheet not found in sheet!")
         sys.exit(1)
     
-    records = worksheet.get_all_records()
+    records = worksheet.get_all_values()
+    
+    # Parse header row and data rows manually (avoids gspread duplicate header bug)
+    if len(records) < 2:
+        print(f"📭 Sheet is empty or has no data rows.")
+        return
+    
+    headers = records[0]
     
     # Find today's approved posts
     to_post = []
-    for i, row in enumerate(records):
-        row_num = i + 2  # Account for header row (row 1)
+    for i, row_values in enumerate(records[1:], start=2):  # start=2 for row number (1-indexed, skip header)
+        row = dict(zip(headers, row_values + [''] * (len(headers) - len(row_values))))
         status = str(row.get("Status", "")).strip().lower()
         date = str(row.get("Date", "")).strip()
         
         if date == today and status in ("approved", "edited"):
-            to_post.append({"row_num": row_num, **row})
+            to_post.append({"row_num": i, **row})
     
     if not to_post:
         print(f"📭 No approved posts for {today}.")
