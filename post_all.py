@@ -2,7 +2,7 @@
 """
 Post approved content from ALL Sheet tabs to X via Upload Post API.
 Handles @brendanwardai, EveryFreeTool, and WhatIfs.
-Smart scheduling + URL-based image uploads.
+Smart scheduling + correct photo upload field.
 """
 
 import os
@@ -110,23 +110,34 @@ def post_text(content, profile, scheduled_date=None):
     return resp.json()
 
 
-def post_photo_url(content, image_url, profile, scheduled_date=None):
-    """Post photo using image URL (not file upload)"""
+def post_photo(content, image_url, profile, scheduled_date=None):
+    """Download image from URL then upload using photos[] field"""
+    img_resp = requests.get(image_url, timeout=30)
+    img_resp.raise_for_status()
+    tmp_path = Path(__file__).parent / "tmp_photo.jpg"
+    with open(tmp_path, "wb") as f:
+        f.write(img_resp.content)
+
     data = {
         "user": profile,
         "platform[]": "x",
         "title": content,
-        "image_url": image_url,
     }
     if scheduled_date:
         data["scheduled_date"] = scheduled_date
         data["timezone"] = "America/New_York"
-    resp = requests.post(
-        "https://api.upload-post.com/api/upload_photos",
-        headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
-        data=data,
-        timeout=60,
-    )
+
+    with open(tmp_path, "rb") as img:
+        resp = requests.post(
+            "https://api.upload-post.com/api/upload_photos",
+            headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+            data=data,
+            files={"photos[]": ("photo.jpg", img, "image/jpeg")},
+            timeout=60,
+        )
+
+    tmp_path.unlink(missing_ok=True)
+
     if resp.status_code >= 400:
         print(f"    ⚠️  Photo API error: {resp.text[:300]}")
     resp.raise_for_status()
@@ -134,7 +145,7 @@ def post_photo_url(content, image_url, profile, scheduled_date=None):
 
 
 def try_post_with_image(content, image_preview, image_prompt, profile, scheduled, tab_name, row_idx):
-    """Try to post with image URL. Falls back to text if anything fails."""
+    """Try to post with image. Falls back to text if anything fails."""
     img_url = None
     if image_preview and image_preview.startswith("http"):
         img_url = image_preview
@@ -148,14 +159,14 @@ def try_post_with_image(content, image_preview, image_prompt, profile, scheduled
 
     # Try with scheduling
     try:
-        return post_photo_url(content, img_url, profile, scheduled)
+        return post_photo(content, img_url, profile, scheduled)
     except Exception as e:
         print(f"    ⚠️  Photo with schedule failed ({e})")
 
     # Try without scheduling
     try:
         print(f"    Retrying photo without scheduling...")
-        return post_photo_url(content, img_url, profile)
+        return post_photo(content, img_url, profile)
     except Exception as e:
         print(f"    ⚠️  Photo without schedule failed ({e})")
 
