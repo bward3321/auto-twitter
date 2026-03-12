@@ -148,7 +148,7 @@ def post_photo(content, image_path, profile, scheduled_date=None):
 
     # If photo upload fails with scheduling, try without scheduling
     if resp.status_code == 400 and scheduled_date:
-        print(f"    ⚠️  Photo scheduling failed, trying immediate post...")
+        print(f"    ⚠️  Photo scheduling failed: {resp.text[:500]}")
         data.pop("scheduled_date", None)
         data.pop("timezone", None)
         with open(image_path, "rb") as img:
