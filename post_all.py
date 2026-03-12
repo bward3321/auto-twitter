@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+"""
+Post approved content from ALL Sheet tabs to X via Upload Post API.
+Handles @brendanwardai, EveryFreeTool, and WhatIfs.
+Smart scheduling: if time has passed, schedules for next available slot.
+
+Run daily via GitHub Actions cron.
+"""
+
+import os
+import sys
+import json
+import time
+import requests
+import yaml
+import gspread
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+from pathlib import Path
+
+# ─── CONFIG ───────────────────────────────────────────────────────────────────
+UPLOAD_POST_API_KEY = os.environ.get("UPLOAD_POST_API_KEY")
+LEONARDO_API_KEY = os.environ.get("LEONARDO_API_KEY", "")
+GOOGLE_SHEETS_CREDS = os.environ.get("GOOGLE_SHEETS_CREDS")
+SHEET_ID = os.environ.get("GOOGLE_SHEET_ID")
+
+SITES_CONFIG = Path(__file__).parent / "sites_config.yaml"
+TZ = ZoneInfo("America/New_York")
+
+# Map tab names to Upload Post profile names
+TAB_PROFILES = {
+    "Posts": os.environ.get("UPLOAD_POST_USER", "@brendanwardai"),
+}
+
+
+def get_sheet_client():
+    if GOOGLE_SHEETS_CREDS:
+        return gspread.service_account_from_dict(json.loads(GOOGLE_SHEETS_CREDS))
+    creds_path = Path(__file__).parent / "google-creds.json"
+    if creds_path.exists():
+        return gspread.service_account(filename=str(creds_path))
+    print("ERROR: No Google credentials found!")
+    sys.exit(1)
+
+
+def load_site_profiles():
+    """Load site profile mappings from sites_config.yaml"""
+    profiles = dict(TAB_PROFILES)
+    if SITES_CONFIG.exists():
+        data = yaml.safe_load(open(SITES_CONFIG))
+        for site in data.get("sites", []):
+            profiles[site["name"]] = site["upload_post_profile"]
+    return profiles
+
+
+def smart_schedule(date_str, time_str):
+    """
+    Convert date + time to scheduled datetime.
+    If time has passed, push to next available 30-min slot.
+    Returns ISO datetime string.
+    """
+    try:
+        dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %I:%M %p")
+        dt = dt.replace(tzinfo=TZ)
+    except ValueError:
+        return None
+    
+    now = datetime.now(TZ)
+    
+    if dt > now:
+        return dt.isoformat()
+    
+    # Time has passed — schedule 5 min from now, staggered
+    new_time = now + timedelta(minutes=5)
+    return new_time.isoformat()
+
+
+def generate_image(prompt):
+    """Generate image via Leonardo Seedream 4.5"""
+    if not LEONARDO_API_KEY:
+        return None
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {LEONARDO_API_KEY}",
+    }
+    try:
+        resp = requests.post(
+            "https://cloud.leonardo.ai/api/rest/v2/generations",
+            headers=headers,
+            json={"model": "seedream-4.5", "parameters": {"width": 1024, "height": 1024, "prompt": prompt, "quantity": 1}, "public": False},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        gen_id = resp.json()["generate"]["generationId"]
+        for _ in range(15):
+            time.sleep(5)
+            s = requests.get(f"https://cloud.leonardo.ai/api/rest/v1/generations/{gen_id}", headers=headers, timeout=15)
+            s.raise_for_status()
+            g = s.json()["generations_by_pk"]
+            if g.get("status") == "COMPLETE":
+                imgs = g.get("generated_images", [])
+                if imgs:
+                    return imgs[0]["url"]
+                break
+            elif g.get("status") == "FAILED":
+                break
+        return None
+    except Exception as e:
+        print(f"    ⚠️  Image error: {e}")
+        return None
+
+
+def download_image(url, filename):
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    filepath = Path(__file__).parent / filename
+    with open(filepath, "wb") as f:
+        f.write(resp.content)
+    return str(filepath)
+
+
+def post_text(content, profile, scheduled_date=None):
+    data = {"user": profile, "platform[]": "x", "title": content}
+    if scheduled_date:
+        data["scheduled_date"] = scheduled_date
+        data["timezone"] = "America/New_York"
+    resp = requests.post(
+        "https://api.upload-post.com/api/upload_text",
+        headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+        data=data, timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def post_photo(content, image_path, profile, scheduled_date=None):
+    data = {"user": profile, "platform[]": "x", "title": content}
+    if scheduled_date:
+        data["scheduled_date"] = scheduled_date
+        data["timezone"] = "America/New_York"
+    with open(image_path, "rb") as img:
+        resp = requests.post(
+            "https://api.upload-post.com/api/upload_photos",
+            headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+            data=data,
+            files={"image": ("image.jpg", img, "image/jpeg")},
+            timeout=60,
+        )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def process_tab(spreadsheet, tab_name, profile):
+    """Process a single Sheet tab — post today's approved content"""
+    try:
+        worksheet = spreadsheet.worksheet(tab_name)
+    except gspread.exceptions.WorksheetNotFound:
+        print(f"  ⚠️  Tab '{tab_name}' not found, skipping")
+        return 0, 0
+    
+    all_values = worksheet.get_all_values()
+    if len(all_values) < 2:
+        print(f"  📭 No data in '{tab_name}'")
+        return 0, 0
+    
+    headers = all_values[0]
+    today = datetime.now(TZ).strftime("%Y-%m-%d")
+    
+    # Find column indices
+    def col_idx(name):
+        try:
+            return headers.index(name)
+        except ValueError:
+            return -1
+    
+    date_idx = col_idx("Date")
+    status_idx = col_idx("Status")
+    content_idx = col_idx("Content")
+    type_idx = col_idx("Type")
+    time_idx = col_idx("Time")
+    img_prompt_idx = col_idx("Image Prompt")
+    img_preview_idx = col_idx("Image Preview")
+    url_idx = col_idx("Post URL")
+    notes_idx = col_idx("Notes")
+    
+    if date_idx < 0 or status_idx < 0 or content_idx < 0:
+        print(f"  ⚠️  Tab '{tab_name}' missing required columns (Date, Status, Content)")
+        return 0, 0
+    
+    posted = 0
+    failed = 0
+    delay_counter = 0
+    
+    for row_idx, row in enumerate(all_values[1:], start=2):
+        # Pad row if needed
+        while len(row) < len(headers):
+            row.append("")
+        
+        date_val = row[date_idx].strip()
+        status_val = row[status_idx].strip().lower()
+        
+        if date_val != today or status_val not in ("approved", "edited"):
+            continue
+        
+        content = row[content_idx]
+        post_type = row[type_idx].lower() if type_idx >= 0 else "text"
+        time_val = row[time_idx] if time_idx >= 0 else ""
+        image_prompt = row[img_prompt_idx] if img_prompt_idx >= 0 else ""
+        image_preview = row[img_preview_idx] if img_preview_idx >= 0 else ""
+        
+        print(f"  📝 Row {row_idx}: {content[:60]}...")
+        
+        # Smart scheduling
+        delay_counter += 1
+        scheduled = smart_schedule(today, time_val)
+        if scheduled:
+            # Add stagger for posts that need rescheduling
+            sched_dt = datetime.fromisoformat(scheduled)
+            now = datetime.now(TZ)
+            if sched_dt - now < timedelta(minutes=2):
+                sched_dt = now + timedelta(minutes=3 * delay_counter)
+                scheduled = sched_dt.isoformat()
+            print(f"  ⏰ Scheduled: {sched_dt.strftime('%I:%M %p')}")
+        
+        try:
+            if post_type == "image" and (image_prompt or image_preview):
+                # Use preview URL if available, otherwise generate
+                img_url = image_preview if image_preview.startswith("http") else None
+                if not img_url and image_prompt:
+                    print(f"  🎨 Generating image...")
+                    img_url = generate_image(image_prompt)
+                
+                if img_url:
+                    img_path = download_image(img_url, f"post_{tab_name}_{row_idx}.jpg")
+                    result = post_photo(content, img_path, profile, scheduled)
+                    Path(img_path).unlink(missing_ok=True)
+                else:
+                    result = post_text(content, profile, scheduled)
+            else:
+                result = post_text(content, profile, scheduled)
+            
+            # Update sheet
+            post_url = ""
+            if result.get("success"):
+                x_result = result.get("results", {}).get("x", {})
+                post_url = x_result.get("url", "")
+            
+            worksheet.update_cell(row_idx, status_idx + 1, "posted")
+            if url_idx >= 0 and post_url:
+                worksheet.update_cell(row_idx, url_idx + 1, post_url)
+            
+            print(f"  ✅ Posted! {post_url}")
+            posted += 1
+            
+        except Exception as e:
+            print(f"  ❌ Error: {e}")
+            worksheet.update_cell(row_idx, status_idx + 1, "failed")
+            if notes_idx >= 0:
+                worksheet.update_cell(row_idx, notes_idx + 1, str(e)[:200])
+            failed += 1
+        
+        time.sleep(2)
+    
+    return posted, failed
+
+
+def main():
+    if not UPLOAD_POST_API_KEY:
+        print("ERROR: UPLOAD_POST_API_KEY not set"); sys.exit(1)
+    if not SHEET_ID:
+        print("ERROR: GOOGLE_SHEET_ID not set"); sys.exit(1)
+    
+    today = datetime.now(TZ).strftime("%Y-%m-%d")
+    
+    print(f"\n{'='*60}")
+    print(f"📤 Daily Post Runner — All Accounts")
+    print(f"📅 Posting approved content for {today}")
+    print(f"{'='*60}")
+    
+    gc = get_sheet_client()
+    spreadsheet = gc.open_by_key(SHEET_ID)
+    profiles = load_site_profiles()
+    
+    total_posted = 0
+    total_failed = 0
+    
+    for tab_name, profile in profiles.items():
+        print(f"\n🐦 {tab_name} → {profile}")
+        p, f = process_tab(spreadsheet, tab_name, profile)
+        total_posted += p
+        total_failed += f
+        if p == 0 and f == 0:
+            print(f"  📭 No approved posts for {today}")
+    
+    print(f"\n{'='*60}")
+    print(f"✅ Done: {total_posted} posted, {total_failed} failed")
+    print(f"{'='*60}\n")
+
+
+if __name__ == "__main__":
+    main()
