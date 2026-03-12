@@ -2,9 +2,7 @@
 """
 Post approved content from ALL Sheet tabs to X via Upload Post API.
 Handles @brendanwardai, EveryFreeTool, and WhatIfs.
-Smart scheduling: if time has passed, schedules for next available slot.
-Image posts: downloads from Leonardo preview URL or generates fresh, uploads to X.
-Falls back to text if image fails.
+Smart scheduling + URL-based image uploads.
 """
 
 import os
@@ -56,12 +54,9 @@ def smart_schedule(date_str, time_str, stagger=0):
         dt = dt.replace(tzinfo=TZ)
     except ValueError:
         return None
-
     now = datetime.now(TZ)
-
     if dt > now:
         return dt.isoformat()
-
     new_time = now + timedelta(minutes=3 + (stagger * 3))
     return new_time.isoformat()
 
@@ -101,15 +96,6 @@ def generate_image_fresh(prompt):
         return None
 
 
-def download_image(url, filename):
-    resp = requests.get(url, timeout=30)
-    resp.raise_for_status()
-    filepath = Path(__file__).parent / filename
-    with open(filepath, "wb") as f:
-        f.write(resp.content)
-    return str(filepath)
-
-
 def post_text(content, profile, scheduled_date=None):
     data = {"user": profile, "platform[]": "x", "title": content}
     if scheduled_date:
@@ -124,51 +110,31 @@ def post_text(content, profile, scheduled_date=None):
     return resp.json()
 
 
-def post_photo(content, image_path, profile, scheduled_date=None):
-    data = {"user": profile, "platform[]": "x", "title": content}
+def post_photo_url(content, image_url, profile, scheduled_date=None):
+    """Post photo using image URL (not file upload)"""
+    data = {
+        "user": profile,
+        "platform[]": "x",
+        "title": content,
+        "image_url": image_url,
+    }
     if scheduled_date:
         data["scheduled_date"] = scheduled_date
         data["timezone"] = "America/New_York"
-
-    # Detect content type from file
-    if image_path.endswith(".png"):
-        content_type = "image/png"
-    else:
-        content_type = "image/jpeg"
-
-    with open(image_path, "rb") as img:
-        files = {"image": ("image.jpg", img, content_type)}
-        resp = requests.post(
-            "https://api.upload-post.com/api/upload_photos",
-            headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
-            data=data,
-            files=files,
-            timeout=60,
-        )
-
-    # If photo upload fails with scheduling, try without scheduling
-    if resp.status_code == 400 and scheduled_date:
-        print(f"    ⚠️  Photo scheduling failed: {resp.text[:500]}")
-        data.pop("scheduled_date", None)
-        data.pop("timezone", None)
-        with open(image_path, "rb") as img:
-            files = {"image": ("image.jpg", img, content_type)}
-            resp = requests.post(
-                "https://api.upload-post.com/api/upload_photos",
-                headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
-                data=data,
-                files=files,
-                timeout=60,
-            )
-
+    resp = requests.post(
+        "https://api.upload-post.com/api/upload_photos",
+        headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+        data=data,
+        timeout=60,
+    )
+    if resp.status_code >= 400:
+        print(f"    ⚠️  Photo API error: {resp.text[:300]}")
     resp.raise_for_status()
     return resp.json()
 
 
 def try_post_with_image(content, image_preview, image_prompt, profile, scheduled, tab_name, row_idx):
-    """Try to post with image. Falls back to text if anything fails."""
-
-    # Step 1: Try to get image URL (from preview or generate fresh)
+    """Try to post with image URL. Falls back to text if anything fails."""
     img_url = None
     if image_preview and image_preview.startswith("http"):
         img_url = image_preview
@@ -180,22 +146,22 @@ def try_post_with_image(content, image_preview, image_prompt, profile, scheduled
         print(f"    ⚠️  No image available, posting as text")
         return post_text(content, profile, scheduled)
 
-    # Step 2: Download the image
+    # Try with scheduling
     try:
-        img_path = download_image(img_url, f"post_{tab_name}_{row_idx}.jpg")
+        return post_photo_url(content, img_url, profile, scheduled)
     except Exception as e:
-        print(f"    ⚠️  Image download failed ({e}), posting as text")
-        return post_text(content, profile, scheduled)
+        print(f"    ⚠️  Photo with schedule failed ({e})")
 
-    # Step 3: Try to upload as photo
+    # Try without scheduling
     try:
-        result = post_photo(content, img_path, profile, scheduled)
-        Path(img_path).unlink(missing_ok=True)
-        return result
+        print(f"    Retrying photo without scheduling...")
+        return post_photo_url(content, img_url, profile)
     except Exception as e:
-        print(f"    ⚠️  Photo upload failed ({e}), posting as text")
-        Path(img_path).unlink(missing_ok=True)
-        return post_text(content, profile, scheduled)
+        print(f"    ⚠️  Photo without schedule failed ({e})")
+
+    # Final fallback: text only
+    print(f"    ⚠️  All photo attempts failed, posting as text")
+    return post_text(content, profile, scheduled)
 
 
 def process_tab(spreadsheet, tab_name, profile):
