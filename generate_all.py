@@ -134,10 +134,11 @@ def generate_posts_claude(prompt_context, num_posts, image_ratio):
 
 REQUIREMENTS:
 - Generate exactly {num_text} TEXT-ONLY posts and {num_image} IMAGE posts
-- Every post MUST be under 280 characters (URLs count toward limit!)
+- Every post MUST be under 280 characters (URLs and hashtags count toward limit!)
 - For IMAGE posts, include "image_prompt" with a detailed, visually striking prompt for Seedream 4.5
 - Pick from DIFFERENT topic categories
 - Mix types: recommendations, hot takes, questions, observations
+- Add 1-2 relevant hashtags to EVERY post for discoverability. Place them naturally at the end. Use niche-specific hashtags that people actually search (e.g. #FreeTools #SaaS #IndieGames #BrowserGames #AI #ColdEmail #StartupLife #BuildInPublic). Never use more than 2 hashtags per post.
 - Today's date: {datetime.now().strftime('%A, %B %d, %Y')}
 
 Return ONLY a JSON array:
