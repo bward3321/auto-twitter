@@ -138,6 +138,7 @@ REQUIREMENTS:
 - For IMAGE posts, include "image_prompt" with a detailed, visually striking prompt for Seedream 4.5
 - Pick from DIFFERENT topic categories
 - Mix types: recommendations, hot takes, questions, observations
+- CRITICAL URL RULE: NEVER link to whatifs.fun/games/ — this URL does NOT exist and returns a 404. Always link to either whatifs.fun (homepage) or whatifs.fun/[specific-game-slug]/ for individual games. Example correct URLs: whatifs.fun/snake-game/, whatifs.fun/reflex-test/, whatifs.fun/spend-a-billion/
 - Add 1-2 relevant hashtags to EVERY post for discoverability. Place them naturally at the end. Use niche-specific hashtags that people actually search (e.g. #FreeTools #SaaS #IndieGames #BrowserGames #AI #ColdEmail #StartupLife #BuildInPublic). Never use more than 2 hashtags per post.
 - Today's date: {datetime.now().strftime('%A, %B %d, %Y')}
 

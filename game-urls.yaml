@@ -1,0 +1,249 @@
+all_game_slugs:
+- 2048-game
+- aim-trainer
+- asteroid-impact
+- attention-test
+- balance-point
+- battleship
+- born-on-this-day
+- brick-breaker
+- capital-quiz
+- carbon-footprint
+- career-quiz
+- center-of-earth
+- chain-reaction
+- checkers
+- chimp-test
+- color-blind-test
+- color-match
+- color-perception
+- connect-four
+- connections
+- cookie-clicker
+- coordination-test
+- crossword
+- distance-guess
+- draw-a-line
+- dungeon-crawler
+- earth-in-a-day
+- earthquake-simulator
+- element-mixer
+- emoji-quiz
+- escape-room
+- evolution-sim
+- flag-quiz
+- flappy-game
+- gravity-playground
+- guess-my-age
+- guess-the-price
+- hangman
+- hearing-age
+- higher-or-lower
+- how-average-are-you
+- how-many-decisions-you-make-today
+- how-rich-are-you
+- how-small-are-you
+- if-you-were-born-in
+- impossible-quiz
+- iq-test
+- jigsaw
+- lie-detector
+- life-expectancy
+- life-in-numbers
+- map-quiz
+- match-the-color
+- math-speed
+- maze-game
+- memory-cards
+- memory-test
+- mental-age
+- millionaire-quiz
+- minesweeper
+- moral-dilemmas
+- nonogram
+- nuclear-simulation
+- number-estimation
+- number-memory
+- ocean-depth
+- one-button-survival
+- optical-illusion-test
+- pandemic-simulator
+- password-game
+- perfect-circle
+- peripheral-vision
+- personality-test
+- piano-tiles
+- pitch-test
+- pixel-perfect
+- plinko
+- reaction-queue
+- reflex-test
+- rhythm-test
+- rock-paper-scissors
+- run-a-country
+- sequence-memory
+- simon-says
+- size-of-space
+- snake-game
+- solar-system
+- solitaire
+- spacebar-test
+- speed-click-test
+- speed-of-light
+- spend-a-billion
+- spot-the-difference
+- steady-hand
+- stock-simulator
+- sudoku
+- superpower-quiz
+- survival-quiz
+- survive-in-space
+- tetris-game
+- tic-tac-toe
+- time-perception
+- tornado-simulator
+- tower-stack
+- trolley-problem
+- true-or-false
+- tsunami-simulator
+- two-truths-one-lie
+- typing-speed-test
+- verbal-memory
+- visual-memory
+- volcano-simulator
+- what-are-the-odds
+- which-came-first
+- word-guess
+- word-scramble
+- world-right-now
+- would-you-rather
+- zombie-survival
+games_by_topic:
+  cognitive_tests:
+  - reflex-test
+  - memory-test
+  - speed-click-test
+  - typing-speed-test
+  - color-match
+  - aim-trainer
+  - number-memory
+  - chimp-test
+  - verbal-memory
+  - color-perception
+  - number-estimation
+  - sequence-memory
+  - time-perception
+  - peripheral-vision
+  - attention-test
+  - visual-memory
+  - coordination-test
+  - reaction-queue
+  - spacebar-test
+  - color-blind-test
+  - hearing-age
+  - mental-age
+  - pitch-test
+  - iq-test
+  - rhythm-test
+  - math-speed
+  fun_games:
+  - snake-game
+  - 2048-game
+  - tetris-game
+  - minesweeper
+  - solitaire
+  - piano-tiles
+  - flappy-game
+  - checkers
+  - cookie-clicker
+  - nonogram
+  - connections
+  - brick-breaker
+  - connect-four
+  - sudoku
+  - memory-cards
+  - simon-says
+  - tic-tac-toe
+  - hangman
+  - rock-paper-scissors
+  - plinko
+  - tower-stack
+  - maze-game
+  - jigsaw
+  - battleship
+  - crossword
+  - word-scramble
+  - word-guess
+  - dungeon-crawler
+  simulations:
+  - nuclear-simulation
+  - pandemic-simulator
+  - earthquake-simulator
+  - tornado-simulator
+  - tsunami-simulator
+  - volcano-simulator
+  - asteroid-impact
+  - survive-in-space
+  - zombie-survival
+  - run-a-country
+  - evolution-sim
+  - stock-simulator
+  - element-mixer
+  quizzes_personality:
+  - true-or-false
+  - would-you-rather
+  - personality-test
+  - emoji-quiz
+  - guess-my-age
+  - impossible-quiz
+  - survival-quiz
+  - superpower-quiz
+  - career-quiz
+  - trolley-problem
+  - moral-dilemmas
+  - two-truths-one-lie
+  - millionaire-quiz
+  - which-came-first
+  - flag-quiz
+  - capital-quiz
+  - map-quiz
+  - guess-the-price
+  - how-rich-are-you
+  - lie-detector
+  - optical-illusion-test
+  perspective_interactive:
+  - how-average-are-you
+  - perfect-circle
+  - ocean-depth
+  - if-you-were-born-in
+  - how-many-decisions-you-make-today
+  - balance-point
+  - gravity-playground
+  - spend-a-billion
+  - life-in-numbers
+  - size-of-space
+  - earth-in-a-day
+  - pixel-perfect
+  - world-right-now
+  - chain-reaction
+  - center-of-earth
+  - born-on-this-day
+  - speed-of-light
+  - what-are-the-odds
+  - distance-guess
+  - how-small-are-you
+  - carbon-footprint
+  - life-expectancy
+  - solar-system
+  - one-button-survival
+  - steady-hand
+  - draw-a-line
+  - match-the-color
+  - spot-the-difference
+  - password-game
+  - higher-or-lower
+  - escape-room
+url_format: https://whatifs.fun/{slug}/
+homepage: https://whatifs.fun
+NEVER_USE: "https://whatifs.fun/games/ \u2014 this URL does NOT exist and returns\
+  \ 404"

@@ -3,145 +3,159 @@ defaults:
   image_post_ratio: 0.4
   posting_window_start_hour: 9
   posting_window_end_hour: 19
-  timezone: "America/New_York"
-
+  timezone: America/New_York
 sites:
+- name: EveryFreeTool
+  upload_post_profile: '@EveryFreeTool'
+  website: everyfreetool.com
+  voice:
+    tone: helpful, slightly nerdy, genuinely excited about free tools
+    style_notes: 'Write like someone who finds obscure free tools so others dont have
+      to. Enthusiastic but not salesy. The account people follow to save money. Mix
+      tool recommendations with hot takes on overpriced SaaS. Lowercase is fine. Keep
+      it conversational.
 
-  - name: "EveryFreeTool"
-    upload_post_profile: "@EveryFreeTool"
-    website: "everyfreetool.com"
+      '
+    avoid: 'Sounding like an ad. Hashtag spam. Emoji overload. Generic productivity
+      hack vibes. Check out this amazing tool energy.
 
-    voice:
-      tone: "helpful, slightly nerdy, genuinely excited about free tools"
-      style_notes: >
-        Write like someone who finds obscure free tools so others dont have to.
-        Enthusiastic but not salesy. The account people follow to save money.
-        Mix tool recommendations with hot takes on overpriced SaaS.
-        Lowercase is fine. Keep it conversational.
-      avoid: >
-        Sounding like an ad. Hashtag spam. Emoji overload.
-        Generic productivity hack vibes. Check out this amazing tool energy.
-      format_preferences: >
-        Short punchy tool recommendations with URL.
-        Did you know format. Hot takes on paid vs free.
-        Stop paying for X when Y exists for free.
+      '
+    format_preferences: 'Short punchy tool recommendations with URL. Did you know
+      format. Hot takes on paid vs free. Stop paying for X when Y exists for free.
 
-    categories:
-      - name: "Free Tool Discoveries"
-        description: "Highlighting specific free tools on everyfreetool.com"
-        subtopics:
-          - PDF tools
-          - Image tools
-          - Developer tools
-          - Writing tools
-          - Finance tools
-          - Video and audio tools
-          - SEO tools
-          - Conversion tools
-        angles:
-          - "Direct links to specific tools on everyfreetool.com"
-          - "Stop paying for X when this free tool does the same thing"
-          - "Before and after comparisons of paid vs free"
+      '
+  categories:
+  - name: Free Tool Discoveries
+    description: Highlighting specific free tools on everyfreetool.com
+    subtopics:
+    - PDF tools
+    - Image tools
+    - Developer tools
+    - Writing tools
+    - Finance tools
+    - Video and audio tools
+    - SEO tools
+    - Conversion tools
+    angles:
+    - Direct links to specific tools on everyfreetool.com
+    - Stop paying for X when this free tool does the same thing
+    - Before and after comparisons of paid vs free
+  - name: Anti-SaaS Takes
+    description: Hot takes on overpriced SaaS and why free alternatives win
+    subtopics:
+    - SaaS pricing is out of control
+    - Features that should be free
+    - Open source vs paid tools
+    - Why simple tools beat bloated platforms
+    angles:
+    - Contrarian takes on popular paid tools
+    - Real cost breakdowns showing waste
+    - Why the tools industry is broken
+  - name: Productivity Workflows
+    description: How to use free tools to build real workflows
+    subtopics:
+    - Combining free tools for complete workflows
+    - Free alternatives to expensive stacks
+    - Tool stacks for specific roles
+    angles:
+    - Complete workflows using only free tools
+    - The free stack for startups and freelancers
+  site_links:
+  - url: https://everyfreetool.com
+    context: general site link
+  - url: https://everyfreetool.com/pdf-tools
+    context: when talking about PDF tools
+  - url: https://everyfreetool.com/image-tools
+    context: when talking about image tools
+  - url: https://everyfreetool.com/developer-tools
+    context: when talking about developer tools
+  - url: https://everyfreetool.com/writing-tools
+    context: when talking about writing tools
+  - url: https://everyfreetool.com/finance-tools
+    context: when talking about finance tools
+  - url: https://everyfreetool.com/seo-tools
+    context: when talking about SEO tools
+  - url: https://everyfreetool.com/video-audio-tools
+    context: when talking about video audio tools
+- name: WhatIfs
+  upload_post_profile: '@ifswhat91839'
+  website: whatifs.fun
+  voice:
+    tone: playful, curious, slightly chaotic, internet-native humor
+    style_notes: 'Write like someone who makes weird browser games and loves it. The
+      vibe is what if we made a game about that. Playful, fun, sometimes absurd. Think
+      neal.fun energy. Mix game promotions with gaming culture takes. Use lowercase.
+      Keep it light and fun. CRITICAL: When linking to games, ALWAYS use specific
+      game URLs like whatifs.fun/snake-game/ or whatifs.fun/reflex-test/ — NEVER use
+      whatifs.fun/games/ because that URL does not exist and returns a 404. Either
+      link to the homepage whatifs.fun or a specific game whatifs.fun/[slug]/.'
+    avoid: 'Being corporate or salesy. Download our app energy. Hashtag spam. Being
+      too serious. Sounding like a game studio press release.
 
-      - name: "Anti-SaaS Takes"
-        description: "Hot takes on overpriced SaaS and why free alternatives win"
-        subtopics:
-          - SaaS pricing is out of control
-          - Features that should be free
-          - Open source vs paid tools
-          - Why simple tools beat bloated platforms
-        angles:
-          - "Contrarian takes on popular paid tools"
-          - "Real cost breakdowns showing waste"
-          - "Why the tools industry is broken"
+      '
+    format_preferences: 'What if you could hooks. Short game descriptions with links.
+      Fun hypothetical questions. Gaming culture hot takes. I just built a game where
+      posts.
 
-      - name: "Productivity Workflows"
-        description: "How to use free tools to build real workflows"
-        subtopics:
-          - Combining free tools for complete workflows
-          - Free alternatives to expensive stacks
-          - Tool stacks for specific roles
-        angles:
-          - "Complete workflows using only free tools"
-          - "The free stack for startups and freelancers"
-
-    site_links:
-      - url: "https://everyfreetool.com"
-        context: "general site link"
-      - url: "https://everyfreetool.com/pdf-tools"
-        context: "when talking about PDF tools"
-      - url: "https://everyfreetool.com/image-tools"
-        context: "when talking about image tools"
-      - url: "https://everyfreetool.com/developer-tools"
-        context: "when talking about developer tools"
-      - url: "https://everyfreetool.com/writing-tools"
-        context: "when talking about writing tools"
-      - url: "https://everyfreetool.com/finance-tools"
-        context: "when talking about finance tools"
-      - url: "https://everyfreetool.com/seo-tools"
-        context: "when talking about SEO tools"
-      - url: "https://everyfreetool.com/video-audio-tools"
-        context: "when talking about video audio tools"
-
-  - name: "WhatIfs"
-    upload_post_profile: "@ifswhat91839"
-    website: "whatifs.fun"
-
-    voice:
-      tone: "playful, curious, slightly chaotic, internet-native humor"
-      style_notes: >
-        Write like someone who makes weird browser games and loves it.
-        The vibe is what if we made a game about that.
-        Playful, fun, sometimes absurd. Think neal.fun energy.
-        Mix game promotions with gaming culture takes.
-        Use lowercase. Keep it light and fun.
-      avoid: >
-        Being corporate or salesy. Download our app energy.
-        Hashtag spam. Being too serious.
-        Sounding like a game studio press release.
-      format_preferences: >
-        What if you could hooks. Short game descriptions with links.
-        Fun hypothetical questions. Gaming culture hot takes.
-        I just built a game where posts.
-
-    categories:
-      - name: "Game Spotlights"
-        description: "Promoting specific games on whatifs.fun"
-        subtopics:
-          - Browser games you can play right now
-          - Quick 60 second games for breaks
-          - Puzzle games and brain teasers
-          - Simulation and sandbox games
-          - Retro and arcade style games
-        angles:
-          - "Direct links to specific games on whatifs.fun"
-          - "Bored at work try this energy"
-          - "I bet you cant beat my score hooks"
-
-      - name: "What If Questions"
-        description: "Engaging hypothetical questions that tie into the brand"
-        subtopics:
-          - Absurd hypotheticals
-          - Would you rather scenarios
-          - What if X was a game concepts
-        angles:
-          - "Pure engagement bait questions"
-          - "Tie hypotheticals back to actual games on the site"
-
-      - name: "Internet and Gaming Culture"
-        description: "Takes on gaming, internet culture, and browser games"
-        subtopics:
-          - Why browser games are making a comeback
-          - Mobile games vs browser games
-          - Nostalgia for old flash games
-          - Why simple games are addictive
-        angles:
-          - "Hot takes on the gaming industry"
-          - "Why AAA games are losing to simple browser games"
-          - "Remember when flash games were everything"
-
-    site_links:
-      - url: "https://whatifs.fun"
-        context: "general site link"
-      - url: "https://whatifs.fun/games"
-        context: "when talking about games in general"
+      '
+  categories:
+  - name: Game Spotlights
+    description: Promoting specific games on whatifs.fun with direct URLs
+    subtopics:
+    - Browser games you can play right now
+    - Quick 60 second games for breaks
+    - Puzzle games and brain teasers
+    - Simulation and sandbox games
+    - Retro and arcade style games
+    - Cognitive tests and brain challenges
+    angles:
+    - Link to SPECIFIC games like whatifs.fun/snake-game/ or whatifs.fun/reflex-test/
+    - Bored at work try this energy
+    - I bet you cant beat my score hooks
+    - Challenge friends to beat your time or score
+  - name: What If Questions
+    description: Engaging hypothetical questions that tie into actual games on the
+      site
+    subtopics:
+    - Absurd hypotheticals
+    - Would you rather scenarios linking to whatifs.fun/would-you-rather/
+    - What if X was a game concepts
+    - Personality and quiz hooks linking to whatifs.fun/personality-test/
+    angles:
+    - Pure engagement bait questions
+    - Tie hypotheticals back to specific games with direct URLs
+    - We actually built a game about this with link
+  - name: Internet and Gaming Culture
+    description: Takes on gaming and internet culture with links to relevant games
+    subtopics:
+    - Why browser games are making a comeback
+    - Mobile games vs browser games
+    - Nostalgia for old flash games
+    - Why simple games are addictive
+    - Cognitive tests going viral
+    angles:
+    - Hot takes on the gaming industry
+    - Why AAA games are losing to simple browser games
+    - Remember when flash games were everything
+    - Link to nostalgic games like whatifs.fun/snake-game/ or whatifs.fun/tetris-game/
+  site_links:
+  - url: https://whatifs.fun
+    context: homepage link
+  - url: https://whatifs.fun/snake-game/
+    context: classic browser game
+  - url: https://whatifs.fun/2048-game/
+    context: puzzle game
+  - url: https://whatifs.fun/reflex-test/
+    context: cognitive test
+  - url: https://whatifs.fun/nuclear-simulation/
+    context: simulation game
+  - url: https://whatifs.fun/would-you-rather/
+    context: quiz game
+  - url: https://whatifs.fun/personality-test/
+    context: personality quiz
+  - url: https://whatifs.fun/spend-a-billion/
+    context: interactive experience
+  - url: https://whatifs.fun/pandemic-simulator/
+    context: simulation
+  - url: https://whatifs.fun/perfect-circle/
+    context: skill challenge
