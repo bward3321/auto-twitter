@@ -2,60 +2,79 @@ name: Twitter Autoposter
 
 on:
   schedule:
-    # Weekly: Generate posts for ALL accounts every Sunday at 10am ET
-    - cron: '0 15 * * 0'
-    # Daily: Post approved content for ALL accounts at 8am ET
-    - cron: '0 13 * * *'
-  
+    # Generate weekly batch — Sunday at 10am ET (14:00 UTC)
+    - cron: '0 14 * * 0'
+    # Post daily — 8am ET (12:00 UTC)
+    - cron: '0 12 * * *'
+    # Backup post run — 8:30am ET in case first one misses
+    - cron: '30 12 * * *'
   workflow_dispatch:
     inputs:
-      command:
-        description: 'Command to run'
+      action:
+        description: 'Action to run'
         required: true
-        default: 'post'
         type: choice
         options:
           - generate
           - post
 
+permissions:
+  contents: write
+
 jobs:
   generate:
-    if: >
-      (github.event_name == 'schedule' && github.event.schedule == '0 15 * * 0') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.command == 'generate')
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 14 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'generate')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - run: pip install -r requirements.txt
-      - name: Generate weekly posts for all accounts
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml gspread
+
+      - name: Generate weekly posts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
-        run: python generate_all.py
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+          GOOGLE_CREDS_PATH: /tmp/google-creds.json
+        run: |
+          echo "$GOOGLE_SHEETS_CREDS" > /tmp/google-creds.json
+          python generate_all.py
 
   post:
-    if: >
-      (github.event_name == 'schedule' && github.event.schedule == '0 13 * * *') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.command == 'post')
+    if: >-
+      (github.event_name == 'schedule' && (github.event.schedule == '0 12 * * *' || github.event.schedule == '30 12 * * *')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'post')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - run: pip install -r requirements.txt
-      - name: Post approved content for all accounts
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml gspread
+
+      - name: Post approved content
         env:
           UPLOAD_POST_API_KEY: ${{ secrets.UPLOAD_POST_API_KEY }}
           UPLOAD_POST_USER: ${{ secrets.UPLOAD_POST_USER }}
           LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
-          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-        run: python post_all.py
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+          GOOGLE_CREDS_PATH: /tmp/google-creds.json
+        run: |
+          echo "$GOOGLE_SHEETS_CREDS" > /tmp/google-creds.json
+          python post_all.py
