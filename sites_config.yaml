@@ -12,7 +12,7 @@ sites:
   - name: "EveryFreeTool"
     upload_post_profile: "@EveryFreeTool"
     website: "everyfreetool.com"
-    image_model: "lucid-origin"
+    image_model: "seedream-4.5"
 
     voice:
       tone: "helpful, slightly nerdy, genuinely excited about free tools, always driving value back to the site"

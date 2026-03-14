@@ -164,7 +164,12 @@ IMPORTANT:
 - Make sure URLs in tweets point to REAL pages on {website}
 - Each post must be completely unique in structure and angle
 - Do NOT start multiple posts the same way
-- Image prompts should describe vibrant, eye-catching visuals"""
+- Image prompts should describe vibrant, eye-catching visuals — think bold colors, clean abstract designs, metaphorical illustrations.
+IMPORTANT FOR IMAGE PROMPTS: Do NOT describe infographics, charts, screenshots, or anything with text/numbers/data in it. AI image generators cannot render readable text. Instead describe:
+- Abstract metaphorical scenes (e.g. 'a chain breaking free from a subscription price tag, vibrant colors, minimal style')
+- Tool-related objects in creative compositions (e.g. 'a glowing PDF icon floating above a desk, neon style, dark background')
+- Conceptual illustrations (e.g. 'a person smashing a piggy bank labeled SaaS, coins flying, pop art style')
+- Bold graphic designs with shapes and colors, NO text or numbers"""
 
     headers = {
         "Content-Type": "application/json",

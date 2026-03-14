@@ -221,7 +221,7 @@ def process_tab(spreadsheet, tab_name, profile, today):
                     img_url = image_preview
                 elif image_prompt:
                     print(f"    Generating fresh image...")
-                    model = "lucid-origin" if tab_name == "EveryFreeTool" else "seedream-4.5"
+                    model = "seedream-4.5" if tab_name == "EveryFreeTool" else "seedream-4.5"
                     img_url = generate_image_fresh(image_prompt, model=model)
 
                 if img_url:
