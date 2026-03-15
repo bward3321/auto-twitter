@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-post_all.py — Multi-account Twitter poster
+post_all.py - Multi-account Twitter poster
 Reads approved posts from Google Sheet tabs and posts them via Upload Post API.
 Supports text, image, and thread posts with smart scheduling fallbacks.
 """
@@ -54,7 +54,8 @@ def post_text(content, profile, scheduled_date=None):
     resp = requests.post(
         f"{UPLOAD_POST_BASE}/upload",
         headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
-        data=data, timeout=60,
+        data=data,
+        timeout=60,
     )
     if resp.status_code >= 400:
         print(f"    Text post error: {resp.text[:300]}")
@@ -122,7 +123,16 @@ def generate_image_fresh(prompt, model="seedream-4.5"):
         "content-type": "application/json",
         "authorization": f"Bearer {LEONARDO_API_KEY}",
     }
-    payload = {"model": model, "parameters": {"width": 1024, "height": 1024, "prompt": prompt, "quantity": 1}, "public": False}
+    payload = {
+        "model": model,
+        "parameters": {
+            "width": 1024,
+            "height": 1024,
+            "prompt": prompt,
+            "quantity": 1,
+        },
+        "public": False,
+    }
     try:
         resp = requests.post(LEONARDO_V2_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
@@ -167,7 +177,7 @@ def process_tab(spreadsheet, tab_name, profile, today):
     try:
         ws = spreadsheet.worksheet(tab_name)
     except gspread.exceptions.WorksheetNotFound:
-        print(f"  Tab \'{tab_name}\' not found, skipping")
+        print(f"  Tab '{tab_name}' not found, skipping")
         return 0, 0
 
     records_raw = ws.get_all_values()
@@ -176,7 +186,10 @@ def process_tab(spreadsheet, tab_name, profile, today):
         return 0, 0
 
     headers = records_raw[0]
-    records = [dict(zip(headers, r + [\'\'] * (len(headers) - len(r)))) for r in records_raw[1:]]
+    records = []
+    for r in records_raw[1:]:
+        padded = r + [''] * (len(headers) - len(r))
+        records.append(dict(zip(headers, padded)))
 
     to_post = []
     thread_tweets = []
@@ -221,8 +234,7 @@ def process_tab(spreadsheet, tab_name, profile, today):
                     img_url = image_preview
                 elif image_prompt:
                     print(f"    Generating fresh image...")
-                    model = "seedream-4.5" if tab_name == "EveryFreeTool" else "seedream-4.5"
-                    img_url = generate_image_fresh(image_prompt, model=model)
+                    img_url = generate_image_fresh(image_prompt, model="seedream-4.5")
 
                 if img_url:
                     try:
