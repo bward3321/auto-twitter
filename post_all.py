@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 post_all.py - Multi-account Twitter poster
-Uses correct Upload Post endpoints:
-  /api/upload_text for text posts
-  /api/upload_photos for image posts
+Uses /api/upload_text for text, /api/upload_photos for images.
+Marks posts as 'scheduling' BEFORE sending to Upload Post to prevent duplicates.
 """
 
 import os
@@ -48,7 +47,6 @@ def get_sheet():
 
 
 def post_text(content, profile, scheduled_date=None):
-    """Post a text-only tweet via /api/upload_text"""
     data = {
         "user": profile,
         "platform[]": "x",
@@ -70,7 +68,6 @@ def post_text(content, profile, scheduled_date=None):
 
 
 def post_photo(content, image_url, profile, scheduled_date=None):
-    """Post a tweet with image via /api/upload_photos"""
     img_resp = requests.get(image_url, timeout=30)
     img_resp.raise_for_status()
     tmp_path = Path(__file__).parent / "tmp_photo.jpg"
@@ -101,10 +98,16 @@ def post_photo(content, image_url, profile, scheduled_date=None):
     return resp.json()
 
 
-def post_thread(tweets, profile, scheduled_date=None):
-    """Post a thread via /api/upload_text (one tweet at a time)"""
-    results = []
+def post_thread(tweets, profile, tab_name, ws, headers, thread_rows, scheduled_date=None):
+    posted_count = 0
     for i, tweet in enumerate(tweets):
+        row_num = thread_rows[i]["row_num"] if i < len(thread_rows) else None
+        status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
+
+        # Mark as scheduling BEFORE sending
+        if row_num:
+            ws.update_cell(row_num, status_col, "scheduling")
+
         try:
             if scheduled_date and i == 0:
                 result = post_text(tweet, profile, scheduled_date)
@@ -118,17 +121,20 @@ def post_thread(tweets, profile, scheduled_date=None):
                     result = post_text(tweet, profile)
             else:
                 result = post_text(tweet, profile)
-            results.append(result)
+
+            if row_num:
+                ws.update_cell(row_num, status_col, "posted")
+            posted_count += 1
             print(f"    Thread {i+1}/{len(tweets)} posted")
             time.sleep(3)
         except Exception as e:
             print(f"    Thread tweet {i+1} failed: {e}")
-            results.append(None)
-    return results
+            if row_num:
+                ws.update_cell(row_num, status_col, f"failed: {str(e)[:50]}")
+    return posted_count
 
 
 def generate_image_fresh(prompt, model="nano-banana-2"):
-    """Generate image via Leonardo.ai Seedream 4.5"""
     if not LEONARDO_API_KEY:
         return ""
     headers = {
@@ -176,7 +182,6 @@ def generate_image_fresh(prompt, model="nano-banana-2"):
 
 
 def get_scheduled_datetime(date_str, time_str):
-    """Build scheduled datetime, push to future if time has passed"""
     now = datetime.datetime.now()
     try:
         scheduled = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
@@ -214,6 +219,7 @@ def process_tab(spreadsheet, tab_name, profile, today):
         date = str(row.get("Date", "")).strip()
         post_type = str(row.get("Type", "")).strip().lower()
 
+        # Only pick up "approved" or "edited" — skip "posted", "failed", "scheduling"
         if date == today and status in ("approved", "edited"):
             if post_type == "thread":
                 thread_tweets.append({"row_num": row_num, **row})
@@ -226,6 +232,7 @@ def process_tab(spreadsheet, tab_name, profile, today):
 
     posted = 0
     failed = 0
+    status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
 
     for row in to_post:
         content = row.get("Content", "").strip()
@@ -241,9 +248,11 @@ def process_tab(spreadsheet, tab_name, profile, today):
         scheduled = get_scheduled_datetime(today, time_str)
         print(f"  Posting [{post_type}] scheduled {scheduled}: {content[:60]}...")
 
+        # MARK AS SCHEDULING BEFORE SENDING — prevents duplicates if script runs twice
+        ws.update_cell(row_num, status_col, "scheduling")
+
         try:
             if post_type == "image":
-                # Get image URL from preview or generate fresh
                 img_url = None
                 if image_preview and image_preview.startswith("http"):
                     img_url = image_preview
@@ -265,17 +274,15 @@ def process_tab(spreadsheet, tab_name, profile, today):
                     print(f"    No image available, posting as text")
                     result = post_text(content, profile, scheduled)
             else:
-                # Text-only post via /api/upload_text
                 result = post_text(content, profile, scheduled)
 
-            status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
+            # Mark as posted AFTER success
             ws.update_cell(row_num, status_col, "posted")
             posted += 1
             print(f"    Posted successfully")
 
         except Exception as e:
             print(f"    Failed: {e}")
-            status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
             ws.update_cell(row_num, status_col, f"failed: {str(e)[:50]}")
             failed += 1
 
@@ -287,19 +294,10 @@ def process_tab(spreadsheet, tab_name, profile, today):
         tweets = [t.get("Content", "").strip() for t in thread_tweets if t.get("Content", "").strip()]
         first_time = thread_tweets[0].get("Time", "12:00").strip()
         scheduled = get_scheduled_datetime(today, first_time)
-        try:
-            results = post_thread(tweets, profile, scheduled)
-            status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
-            for t_row in thread_tweets:
-                ws.update_cell(t_row["row_num"], status_col, "posted")
-            posted += len(thread_tweets)
-            print(f"    Thread posted ({len(tweets)} tweets)")
-        except Exception as e:
-            print(f"    Thread failed: {e}")
-            status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
-            for t_row in thread_tweets:
-                ws.update_cell(t_row["row_num"], status_col, f"failed: {str(e)[:50]}")
-            failed += len(thread_tweets)
+        thread_posted = post_thread(tweets, profile, tab_name, ws, headers, thread_tweets, scheduled)
+        posted += thread_posted
+        if thread_posted < len(thread_tweets):
+            failed += len(thread_tweets) - thread_posted
 
     return posted, failed
 
