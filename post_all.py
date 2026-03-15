@@ -2,7 +2,7 @@
 """
 post_all.py - Multi-account Twitter poster
 Reads approved posts from Google Sheet tabs and posts them via Upload Post API.
-Supports text, image, and thread posts with smart scheduling fallbacks.
+All posts go through upload_photos endpoint since /upload requires video.
 """
 
 import os
@@ -46,46 +46,68 @@ def get_sheet():
     return gc.open_by_key(GOOGLE_SHEET_ID)
 
 
-def post_text(content, profile, scheduled_date=None):
-    data = {"user": profile, "platform[]": "x", "title": content}
-    if scheduled_date:
-        data["scheduled_date"] = scheduled_date
-        data["timezone"] = "America/New_York"
-    resp = requests.post(
-        f"{UPLOAD_POST_BASE}/upload",
-        headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
-        data=data,
-        timeout=60,
-    )
-    if resp.status_code >= 400:
-        print(f"    Text post error: {resp.text[:300]}")
-    resp.raise_for_status()
-    return resp.json()
+def post_tweet(content, profile, scheduled_date=None, image_url=None):
+    """Universal post function. Uses upload_photos for image posts,
+    tries upload_photos then /upload for text posts."""
 
-
-def post_photo(content, image_url, profile, scheduled_date=None):
-    img_resp = requests.get(image_url, timeout=30)
-    img_resp.raise_for_status()
-    tmp_path = Path(__file__).parent / "tmp_photo.jpg"
-    with open(tmp_path, "wb") as f:
-        f.write(img_resp.content)
-
-    data = {"user": profile, "platform[]": "x", "title": content}
+    data = {
+        "user": profile,
+        "platform[]": "x",
+        "title": content,
+    }
     if scheduled_date:
         data["scheduled_date"] = scheduled_date
         data["timezone"] = "America/New_York"
 
-    with open(tmp_path, "rb") as img:
-        resp = requests.post(
-            f"{UPLOAD_POST_BASE}/upload_photos",
-            headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
-            data=data,
-            files={"photos[]": ("photo.jpg", img, "image/jpeg")},
-            timeout=60,
-        )
-    tmp_path.unlink(missing_ok=True)
+    tmp_path = None
+    img_file = None
+
+    if image_url:
+        try:
+            img_resp = requests.get(image_url, timeout=30)
+            img_resp.raise_for_status()
+            tmp_path = Path(__file__).parent / "tmp_photo.jpg"
+            with open(tmp_path, "wb") as f:
+                f.write(img_resp.content)
+            img_file = open(tmp_path, "rb")
+        except Exception as e:
+            print(f"    Image download failed: {e}, posting as text")
+            img_file = None
+
+    try:
+        if img_file:
+            # Image post via upload_photos
+            resp = requests.post(
+                f"{UPLOAD_POST_BASE}/upload_photos",
+                headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+                data=data,
+                files={"photos[]": ("photo.jpg", img_file, "image/jpeg")},
+                timeout=60,
+            )
+        else:
+            # Text post — try upload_photos without file first
+            resp = requests.post(
+                f"{UPLOAD_POST_BASE}/upload_photos",
+                headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+                data=data,
+                timeout=60,
+            )
+            if resp.status_code >= 400:
+                print(f"    upload_photos rejected text-only ({resp.status_code}), trying /upload...")
+                resp = requests.post(
+                    f"{UPLOAD_POST_BASE}/upload",
+                    headers={"Authorization": f"Apikey {UPLOAD_POST_API_KEY}"},
+                    data=data,
+                    timeout=60,
+                )
+    finally:
+        if img_file:
+            img_file.close()
+        if tmp_path and tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+
     if resp.status_code >= 400:
-        print(f"    Photo upload error: {resp.text[:300]}")
+        print(f"    Post error ({resp.status_code}): {resp.text[:300]}")
     resp.raise_for_status()
     return resp.json()
 
@@ -95,17 +117,17 @@ def post_thread(tweets, profile, scheduled_date=None):
     for i, tweet in enumerate(tweets):
         try:
             if scheduled_date and i == 0:
-                result = post_text(tweet, profile, scheduled_date)
+                result = post_tweet(tweet, profile, scheduled_date)
             elif scheduled_date and i > 0:
                 try:
                     dt = datetime.datetime.strptime(scheduled_date, "%Y-%m-%d %H:%M")
                     dt = dt + datetime.timedelta(minutes=i * 2)
                     offset_time = dt.strftime("%Y-%m-%d %H:%M")
-                    result = post_text(tweet, profile, offset_time)
+                    result = post_tweet(tweet, profile, offset_time)
                 except Exception:
-                    result = post_text(tweet, profile)
+                    result = post_tweet(tweet, profile)
             else:
-                result = post_text(tweet, profile)
+                result = post_tweet(tweet, profile)
             results.append(result)
             print(f"    Thread {i+1}/{len(tweets)} posted")
             time.sleep(3)
@@ -228,29 +250,15 @@ def process_tab(spreadsheet, tab_name, profile, today):
         print(f"  Posting [{post_type}] scheduled {scheduled}: {content[:60]}...")
 
         try:
+            img_url = None
             if post_type == "image":
-                img_url = None
                 if image_preview and image_preview.startswith("http"):
                     img_url = image_preview
                 elif image_prompt:
                     print(f"    Generating fresh image...")
                     img_url = generate_image_fresh(image_prompt, model="seedream-4.5")
 
-                if img_url:
-                    try:
-                        result = post_photo(content, img_url, profile, scheduled)
-                    except Exception as e:
-                        print(f"    Photo scheduled failed: {e}")
-                        try:
-                            result = post_photo(content, img_url, profile)
-                        except Exception as e2:
-                            print(f"    Photo immediate failed: {e2}, falling back to text")
-                            result = post_text(content, profile, scheduled)
-                else:
-                    print(f"    No image available, posting as text")
-                    result = post_text(content, profile, scheduled)
-            else:
-                result = post_text(content, profile, scheduled)
+            result = post_tweet(content, profile, scheduled, image_url=img_url)
 
             status_col = headers.index("Status") + 1 if "Status" in headers else len(headers)
             ws.update_cell(row_num, status_col, "posted")
