@@ -284,7 +284,7 @@ Return ONLY a JSON array of strings. No markdown. No backticks. Number them like
         return []
 
 
-def generate_image(prompt, model="seedream-4.5"):
+def generate_image(prompt, model="nano-banana-2"):
     if not LEONARDO_API_KEY:
         return ""
 
@@ -353,7 +353,7 @@ def generate_post_times(num_posts, start_hour, end_hour):
 
 def generate_for_site(spreadsheet, site_config, defaults, dates, game_urls=None):
     site_name = site_config["name"]
-    image_model = site_config.get("image_model", "seedream-4.5")
+    image_model = site_config.get("image_model", "nano-banana-2")
     posts_per_day = defaults.get("posts_per_day", 8)
     start_hour = defaults.get("posting_window_start_hour", 9)
     end_hour = defaults.get("posting_window_end_hour", 20)
@@ -496,7 +496,7 @@ def generate_for_brendan(spreadsheet, defaults, dates):
             image_preview = ""
             if post_type == "image" and image_prompt:
                 print(f"    Generating image (seedream-4.5)...")
-                image_preview = generate_image(image_prompt, model="seedream-4.5")
+                image_preview = generate_image(image_prompt, model="nano-banana-2")
             post_time = times[i] if i < len(times) else f"{start_hour + i}:00"
             all_rows.append([day_name, date_str, post_time, content, post_type, image_prompt, image_preview, category, "pending"])
 

@@ -12,7 +12,7 @@ sites:
   - name: "EveryFreeTool"
     upload_post_profile: "@EveryFreeTool"
     website: "everyfreetool.com"
-    image_model: "seedream-4.5"
+    image_model: "nano-banana-2"
 
     voice:
       tone: "helpful, slightly nerdy, genuinely excited about free tools, always driving value back to the site"
@@ -148,7 +148,7 @@ sites:
   - name: "WhatIfs"
     upload_post_profile: "@ifswhat91839"
     website: "whatifs.fun"
-    image_model: "seedream-4.5"
+    image_model: "nano-banana-2"
 
     voice:
       tone: "playful, curious, slightly chaotic, internet-native humor, always driving people to play games"

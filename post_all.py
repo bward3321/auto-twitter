@@ -127,7 +127,7 @@ def post_thread(tweets, profile, scheduled_date=None):
     return results
 
 
-def generate_image_fresh(prompt, model="seedream-4.5"):
+def generate_image_fresh(prompt, model="nano-banana-2"):
     """Generate image via Leonardo.ai Seedream 4.5"""
     if not LEONARDO_API_KEY:
         return ""
@@ -249,7 +249,7 @@ def process_tab(spreadsheet, tab_name, profile, today):
                     img_url = image_preview
                 elif image_prompt:
                     print(f"    Generating fresh image...")
-                    img_url = generate_image_fresh(image_prompt, model="seedream-4.5")
+                    img_url = generate_image_fresh(image_prompt, model="nano-banana-2")
 
                 if img_url:
                     try:
