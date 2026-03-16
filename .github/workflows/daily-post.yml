@@ -2,12 +2,14 @@ name: Twitter Autoposter
 
 on:
   schedule:
-    # Generate weekly batch — Sunday at 10am ET (14:00 UTC)
-    - cron: '0 14 * * 0'
-    # Post daily — 8am ET (12:00 UTC)
-    - cron: '0 12 * * *'
-    # Backup post run — 8:30am ET in case first one misses
-    - cron: '30 12 * * *'
+    # Keep as backup - GitHub cron (unreliable but free backup)
+    - cron: '0 14 * * 0'   # Sunday 10am ET
+    - cron: '0 12 * * *'   # Daily 8am ET
+    - cron: '30 12 * * *'  # Daily 8:30am ET backup
+
+  repository_dispatch:
+    types: [post, generate]
+
   workflow_dispatch:
     inputs:
       action:
@@ -25,9 +27,9 @@ jobs:
   generate:
     if: >-
       (github.event_name == 'schedule' && github.event.schedule == '0 14 * * 0') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'generate')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'generate') ||
+      (github.event_name == 'repository_dispatch' && github.event.action == 'generate')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -37,25 +39,22 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests pyyaml gspread
+        run: pip install requests pyyaml gspread google-auth
 
       - name: Generate weekly posts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
-          GOOGLE_CREDS_PATH: /tmp/google-creds.json
-        run: |
-          echo "$GOOGLE_SHEETS_CREDS" > /tmp/google-creds.json
-          python generate_all.py
+          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
+        run: python generate_all.py
 
   post:
     if: >-
-      (github.event_name == 'schedule' && (github.event.schedule == '0 12 * * *' || github.event.schedule == '30 12 * * *')) ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'post')
+      (github.event_name == 'schedule' && github.event.schedule != '0 14 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'post') ||
+      (github.event_name == 'repository_dispatch' && github.event.action == 'post')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -65,16 +64,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests pyyaml gspread
+        run: pip install requests pyyaml gspread google-auth
 
       - name: Post approved content
         env:
           UPLOAD_POST_API_KEY: ${{ secrets.UPLOAD_POST_API_KEY }}
           UPLOAD_POST_USER: ${{ secrets.UPLOAD_POST_USER }}
-          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
-          GOOGLE_CREDS_PATH: /tmp/google-creds.json
-        run: |
-          echo "$GOOGLE_SHEETS_CREDS" > /tmp/google-creds.json
-          python post_all.py
+          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
+        run: python post_all.py
