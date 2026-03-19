@@ -64,7 +64,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests pyyaml gspread google-auth
+        run: pip install requests pyyaml gspread google-auth oauth2client
 
       - name: Post approved content
         env:
