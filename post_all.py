@@ -50,7 +50,7 @@ TIMEZONE = 'America/New_York'
 
 def get_sheet():
     """Authenticate with Google Sheets and return the spreadsheet."""
-    creds_json = os.environ.get('GOOGLE_CREDENTIALS', '')
+    creds_json = os.environ.get('GOOGLE_SHEETS_CREDS', '')
     if not creds_json:
         # Try loading from file (local development)
         creds_file = os.path.join(os.path.dirname(__file__), 'credentials.json')
