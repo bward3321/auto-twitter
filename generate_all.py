@@ -16,6 +16,31 @@ import gspread
 import yaml
 from pathlib import Path
 
+def get_recent_posts_for_dedup(spreadsheet, tab_name, num_days=14):
+    """Read last N days of posts from sheet to prevent duplicate content."""
+    try:
+        ws = spreadsheet.worksheet(tab_name)
+        records = ws.get_all_values()
+        if len(records) < 2:
+            return []
+        headers = records[0]
+        recent = []
+        import datetime as dt
+        cutoff = dt.date.today() - dt.timedelta(days=num_days)
+        for row in records[1:]:
+            if len(row) > 3:
+                try:
+                    row_date = dt.date.fromisoformat(row[1].strip())
+                    if row_date >= cutoff and row[3].strip():
+                        recent.append(row[3].strip()[:100])
+                except (ValueError, IndexError):
+                    continue
+        return recent[-60:]
+    except Exception as e:
+        print(f"  Warning: dedup read failed: {e}")
+        return []
+
+
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 LEONARDO_API_KEY = os.environ.get("LEONARDO_API_KEY", "")
 GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "")
@@ -469,7 +494,7 @@ def generate_for_brendan(spreadsheet, defaults, dates):
                 json={
                     "model": ANTHROPIC_MODEL,
                     "max_tokens": 2500,
-                    "system": f"You write tweets for @brendanwardai -- a founder who builds AI-powered marketing systems.\nVoice: {voice_notes}\nTopics: {topic_list}\n\nRules:\n1. Under 280 chars. Most 150-250.\n2. Lowercase casual tone.\n3. Sound human, not AI.\n4. 1-2 relevant hashtags per tweet.\n5. Mix hot takes, observations, tips, engagement posts.\n6. Be direct and opinionated.",
+                    "system": f"You write tweets for @brendanwardai -- a founder who builds AI-powered marketing systems.\nVoice: {voice_notes}\nTopics: {topic_list}\n\nRules:\n1. Under 280 chars. Most 150-250.\n2. Lowercase casual tone.\n3. Sound human, not AI.\n4. 1-2 relevant hashtags per tweet.\n5. Mix hot takes, observations, tips, engagement posts.\n6. Be direct and opinionated. Never repeat content you have posted before — always find fresh angles.",
                     "messages": [{"role": "user", "content": f"Generate {posts_per_day} tweets for {date_str}.\n{num_text} text only, {num_image} with images.\nReturn ONLY a JSON array: [{{\"content\":\"tweet\",\"type\":\"text|image\",\"image_prompt\":\"for images only\",\"category\":\"topic\"}}]"}],
                 },
                 timeout=90,
